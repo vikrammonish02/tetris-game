@@ -72,15 +72,36 @@ If you prefer to build the app image directly (without Compose), run this from t
 docker build -t tetris-game:latest .
 ```
 
-### Mac Docker deployment quick command
+### Step-by-step Docker deployment on macOS
 
-On macOS with Docker Desktop installed, you can deploy everything (builder, API, PostgreSQL, and web UI) in one go from the repository root:
+Use these commands in a macOS terminal to build and launch the OpenFAST stack (builder, FastAPI, PostgreSQL, and the web UI):
+
+1) Install and start **Docker Desktop for Mac** (must be running so Docker commands work).
+2) Clone the repository and change into it so Docker can find the project files:
+
+```bash
+git clone https://github.com/vikrammonish02/tetris-game.git
+cd tetris-game
+```
+
+3) Build and start the full stack (first build downloads dependencies and compiles OpenFAST, so it may take several minutes):
 
 ```bash
 docker compose up --build
 ```
 
-After the images build, open http://localhost:8000/ in your browser to use the web UI and http://localhost:8000/docs to explore the API.
+4) When the containers report "Started server process" and "database system is ready to accept connections", open:
+
+- Web UI: http://localhost:8000/
+- API docs (Swagger): http://localhost:8000/docs
+
+5) To stop everything, return to the same terminal and press **Ctrl+C**, then clean up containers and the database volume if desired:
+
+```bash
+docker compose down
+# optional: remove the persisted Postgres volume
+docker volume rm tetris-game_postgres_data
+```
 
 ### Local development without Docker
 
