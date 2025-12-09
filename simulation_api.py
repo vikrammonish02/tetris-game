@@ -6,12 +6,14 @@ from typing import Dict, List, Optional
 from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException, Response
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 BASE_DIR = Path(__file__).parent
 WEB_DIR = BASE_DIR / "web"
+INDEX_PATH = WEB_DIR / "index.html"
+INDEX_HTML = INDEX_PATH.read_text(encoding="utf-8") if INDEX_PATH.exists() else None
 
 app = FastAPI(title="Turbine Simulation Manager")
 
@@ -21,13 +23,19 @@ if WEB_DIR.exists():
 
 
 @app.get("/", include_in_schema=False)
-async def serve_index() -> FileResponse:
+async def serve_index() -> HTMLResponse:
     """Serve the web UI entrypoint."""
 
-    index_path = WEB_DIR / "index.html"
-    if not index_path.exists():
+    if INDEX_HTML is None:
         raise HTTPException(status_code=404, detail="Web UI not found")
-    return FileResponse(index_path)
+    return HTMLResponse(content=INDEX_HTML, status_code=200)
+
+
+@app.get("/health", include_in_schema=False)
+async def health() -> dict[str, str]:
+    """Lightweight health check for uptime monitoring."""
+
+    return {"status": "ok"}
 
 
 class SimulationBase(BaseModel):
