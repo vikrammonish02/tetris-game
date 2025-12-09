@@ -111,3 +111,11 @@ uvicorn simulation_api:app --reload
 ```
 
 The service runs on http://127.0.0.1:8000/ with the same endpoints as above.
+
+## Testing
+
+To verify the OpenFAST utilities and API helpers, run the test suite from the repository root:
+
+```bash
+pytest -q
+```
