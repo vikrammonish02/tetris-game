@@ -9,11 +9,13 @@ RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
        build-essential \
        git \
+       ca-certificates \
        cmake \
        gfortran \
        libblas-dev \
        liblapack-dev \
        libfftw3-dev \
+    && update-ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /tmp/openfast
