@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Turbine Simulation Manager</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f4f6f8; color: #1f2933; }
+    header { background: #0b5ed7; color: #fff; padding: 1rem 1.5rem; }
+    main { padding: 1.5rem; max-width: 960px; margin: 0 auto; }
+    section { background: #fff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); padding: 1rem 1.25rem; margin-bottom: 1rem; }
+    h1, h2 { margin: 0; }
+    form { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 1rem; }
+    form label { display: flex; flex-direction: column; font-weight: 600; }
+    form input, form textarea { padding: 0.5rem; border: 1px solid #cbd2d9; border-radius: 4px; font-size: 0.95rem; }
+    form textarea { grid-column: span 2; min-height: 80px; resize: vertical; }
+    button { cursor: pointer; background: #0b5ed7; color: white; border: none; padding: 0.6rem 1rem; border-radius: 6px; font-weight: 600; }
+    button.secondary { background: #e02424; }
+    .grid-span-2 { grid-column: span 2; }
+    .subgrid { background: #f8fafc; border: 1px solid #e4e7eb; border-radius: 6px; padding: 0.75rem; display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    .muted-title { font-size: 0.9rem; color: #52606d; margin-bottom: 0.25rem; font-weight: 700; grid-column: span 2; }
+    .tag { display: inline-block; background: #e5edff; color: #24478f; border-radius: 999px; padding: 0.2rem 0.55rem; margin: 0.15rem; font-size: 0.85rem; }
+    .sim-card { border: 1px solid #d5dadd; border-radius: 8px; padding: 0.75rem; display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem; }
+    .sim-details { max-width: 70%; }
+    .muted { color: #52606d; font-size: 0.9rem; }
+    .empty { color: #738192; text-align: center; padding: 1rem 0; }
+    @media (max-width: 720px) { form { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Turbine Simulation Manager</h1>
+  </header>
+  <main>
+    <section>
+      <h2>Create Simulation</h2>
+      <form id="create-form">
+        <label> Name <input type="text" id="name" required maxlength="100" /> </label>
+        <label> Simulation Type <input type="text" id="simulation_type" maxlength="100" placeholder="DLC, Power Curve, etc." /> </label>
+        <label> Description <textarea id="description" maxlength="500" placeholder="Optional summary"></textarea> </label>
+
+        <div class="subgrid grid-span-2">
+          <div class="muted-title">Primary Files</div>
+          <label> FST Path <input type="text" id="fst_path" placeholder="/path/to/simulation.fst" /> </label>
+          <label> Tower File <input type="text" id="tower_file" placeholder="/path/to/tower.dat" /> </label>
+          <label class="grid-span-2"> Controller File <input type="text" id="controller_file" placeholder="/path/to/controller.dll" /> </label>
+        </div>
+
+        <div class="subgrid grid-span-2">
+          <div class="muted-title">Blade Files</div>
+          <label class="grid-span-2"> Blade File Paths (one per line)
+            <textarea id="blade_files" placeholder="/path/to/blade1.dat&#10;/path/to/blade2.dat"></textarea>
+          </label>
+        </div>
+
+        <div class="subgrid grid-span-2">
+          <div class="muted-title">IEC DLCs</div>
+          <label class="grid-span-2"> DLC Identifiers (one per line)
+            <textarea id="iec_dlcs" placeholder="1.1, 1.2, 1.3"></textarea>
+          </label>
+        </div>
+
+        <label> Parameters (JSON)
+          <textarea id="parameters" placeholder='{"wind_speed": 12, "seed": 42}'></textarea>
+        </label>
+
+        <div style="grid-column: span 2; text-align: right;">
+          <button type="submit">Create</button>
+        </div>
+      </form>
+    </section>
+
+    <section>
+      <div style="display:flex; justify-content: space-between; align-items: center;">
+        <h2>Simulations</h2>
+        <button id="refresh">Refresh</button>
+      </div>
+      <div id="simulations" class="empty">Loading simulations...</div>
+    </section>
+  </main>
+
+  <script>
+    const apiBase = '';
+
+    function createTag(text) {
+      const span = document.createElement('span');
+      span.className = 'tag';
+      span.textContent = text;
+      return span;
+    }
+
+    function renderSimulations(simulations) {
+      const container = document.getElementById('simulations');
+      container.innerHTML = '';
+
+      if (!simulations.length) {
+        container.innerHTML = '<div class="empty">No simulations found. Create one above to get started.</div>';
+        return;
+      }
+
+      simulations.forEach(sim => {
+        const card = document.createElement('div');
+        card.className = 'sim-card';
+
+        const details = document.createElement('div');
+        details.className = 'sim-details';
+        const name = document.createElement('div');
+        name.innerHTML = `<strong>${sim.name}</strong>`;
+        const desc = document.createElement('div');
+        desc.className = 'muted';
+        desc.textContent = sim.description || 'No description provided';
+        const meta = document.createElement('div');
+        meta.className = 'muted';
+        meta.textContent = `ID: ${sim.id}`;
+
+        const files = document.createElement('div');
+        files.className = 'muted';
+        const bladeTags = (sim.blade_files || []).map(createTag);
+        const dlcTags = (sim.iec_dlcs || []).map(createTag);
+        files.innerHTML = `FST: ${sim.fst_path || 'n/a'} `;
+        if (sim.tower_file) files.innerHTML += `| Tower: ${sim.tower_file} `;
+        if (sim.controller_file) files.innerHTML += `| Controller: ${sim.controller_file} `;
+
+        const bladeWrapper = document.createElement('div');
+        if (bladeTags.length) {
+          const label = document.createElement('span');
+          label.className = 'muted';
+          label.textContent = 'Blades:';
+          bladeWrapper.appendChild(label);
+          bladeTags.forEach(tag => bladeWrapper.appendChild(tag));
+        }
+
+        const dlcWrapper = document.createElement('div');
+        if (dlcTags.length) {
+          const label = document.createElement('span');
+          label.className = 'muted';
+          label.textContent = 'IEC DLCs:';
+          dlcWrapper.appendChild(label);
+          dlcTags.forEach(tag => dlcWrapper.appendChild(tag));
+        }
+
+        const simType = document.createElement('div');
+        simType.className = 'muted';
+        simType.textContent = sim.simulation_type ? `Simulation Type: ${sim.simulation_type}` : 'Simulation Type: n/a';
+
+        details.appendChild(name);
+        details.appendChild(desc);
+        details.appendChild(meta);
+        details.appendChild(simType);
+        details.appendChild(files);
+        if (bladeTags.length) details.appendChild(bladeWrapper);
+        if (dlcTags.length) details.appendChild(dlcWrapper);
+
+        const actions = document.createElement('div');
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'secondary';
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.onclick = async () => {
+          await fetch(`${apiBase}/simulations/${sim.id}`, { method: 'DELETE' });
+          loadSimulations();
+        };
+
+        actions.appendChild(deleteBtn);
+        card.appendChild(details);
+        card.appendChild(actions);
+        container.appendChild(card);
+      });
+    }
+
+    async function loadSimulations() {
+      const container = document.getElementById('simulations');
+      container.innerHTML = '<div class="empty">Loading simulations...</div>';
+      const res = await fetch(`${apiBase}/simulations`);
+      if (!res.ok) {
+        container.innerHTML = '<div class="empty">Unable to fetch simulations.</div>';
+        return;
+      }
+      const data = await res.json();
+      renderSimulations(data);
+    }
+
+    document.getElementById('refresh').addEventListener('click', loadSimulations);
+
+    document.getElementById('create-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const name = document.getElementById('name').value.trim();
+      const description = document.getElementById('description').value.trim();
+      const simulation_type = document.getElementById('simulation_type').value.trim();
+      const fst_path = document.getElementById('fst_path').value.trim();
+      const tower_file = document.getElementById('tower_file').value.trim();
+      const controller_file = document.getElementById('controller_file').value.trim();
+      const blade_files_text = document.getElementById('blade_files').value.trim();
+      const iec_dlcs_text = document.getElementById('iec_dlcs').value.trim();
+      const parametersInput = document.getElementById('parameters').value.trim();
+      let parameters = {};
+      if (parametersInput) {
+        try {
+          parameters = JSON.parse(parametersInput);
+        } catch (err) {
+          alert('Parameters must be valid JSON');
+          return;
+        }
+      }
+
+      const blade_files = blade_files_text
+        ? blade_files_text.split(/\n|,/).map(s => s.trim()).filter(Boolean)
+        : [];
+
+      const iec_dlcs = iec_dlcs_text
+        ? iec_dlcs_text.split(/\n|,/).map(s => s.trim()).filter(Boolean)
+        : [];
+
+      const payload = {
+        name,
+        description: description || null,
+        simulation_type: simulation_type || null,
+        fst_path: fst_path || null,
+        tower_file: tower_file || null,
+        controller_file: controller_file || null,
+        blade_files,
+        iec_dlcs,
+        parameters
+      };
+      const res = await fetch(`${apiBase}/simulations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const detail = await res.json().catch(() => ({}));
+        alert(`Failed to create simulation: ${detail.detail || res.status}`);
+        return;
+      }
+
+      document.getElementById('create-form').reset();
+      loadSimulations();
+    });
+
+    // Initial load
+    loadSimulations();
+  </script>
+</body>
+</html>
