@@ -72,6 +72,16 @@ If you prefer to build the app image directly (without Compose), run this from t
 docker build -t tetris-game:latest .
 ```
 
+### Mac Docker deployment quick command
+
+On macOS with Docker Desktop installed, you can deploy everything (builder, API, PostgreSQL, and web UI) in one go from the repository root:
+
+```bash
+docker compose up --build
+```
+
+After the images build, open http://localhost:8000/ in your browser to use the web UI and http://localhost:8000/docs to explore the API.
+
 ### Local development without Docker
 
 ```bash
