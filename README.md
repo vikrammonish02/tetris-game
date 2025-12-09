@@ -39,3 +39,27 @@ Controls:
 - **Down Arrow**: Soft drop
 - **Up Arrow**: Rotate piece
 - **Window close button**: Quit the game
+
+## Run the Turbine Simulation API + Web UI
+
+This repository also includes a FastAPI service for managing turbine simulations and a lightweight web UI.
+
+### Quick start with Docker Compose
+
+```bash
+docker compose up --build
+```
+
+Once the stack is running:
+
+- Visit http://localhost:8000/ to open the simulation manager web UI.
+- The API schema is available at http://localhost:8000/docs.
+
+### Local development without Docker
+
+```bash
+pip install -r requirements.txt
+uvicorn simulation_api:app --reload
+```
+
+The service runs on http://127.0.0.1:8000/ with the same endpoints as above.

@@ -1,0 +1,29 @@
+version: "3.9"
+
+services:
+  app:
+    build: .
+    image: openfast-app:latest
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql://openfast:openfast@db:5432/openfast
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+
+  db:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: openfast
+      POSTGRES_USER: openfast
+      POSTGRES_PASSWORD: openfast
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  postgres_data:
